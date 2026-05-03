@@ -218,17 +218,23 @@
   #view-ephemera .entry-image {
     aspect-ratio: auto;
     height: auto;
-    max-height: 62vh;
+    max-height: 56vh;
     background: transparent;
     box-shadow: none;
     display: flex; align-items: center; justify-content: flex-start;
+    overflow: hidden;
   }
   #view-ephemera .entry-image img {
     width: auto; height: auto;
-    max-width: 100%; max-height: 62vh;
+    max-width: 100%; max-height: 56vh;
     object-fit: contain;
     border-radius: 2px;
     box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(244,234,216,0.06);
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
+  }
+  #view-ephemera .entry-image img:hover {
+    transform: scale(1.02);
   }
   #view-ephemera .entry-image .placeholder {
     position: relative; width: 100%; aspect-ratio: 4 / 5;
@@ -243,10 +249,10 @@
   .entry-image.side-by-side {
     aspect-ratio: auto !important;
     height: auto;
-    max-height: 62vh;
+    max-height: 56vh;
     background: transparent;
     box-shadow: none;
-    overflow: visible;
+    overflow: hidden;
     display: flex;
     gap: 14px;
   }
@@ -256,12 +262,18 @@
   .entry-image.side-by-side img {
     width: auto; height: auto;
     max-width: 100%;
-    max-height: 30vh;
+    max-height: 26vh;
     object-fit: contain;
     border-radius: 2px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(244,234,216,0.06);
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
   }
-  .entry-image.side-by-side img { max-width: 48%; max-height: 55vh; }
+  .entry-image.stacked img:hover,
+  .entry-image.side-by-side img:hover {
+    transform: scale(1.02);
+  }
+  .entry-image.side-by-side img { max-width: 48%; max-height: 50vh; }
   .entry-image.stacked::after,
   .entry-image.side-by-side::after { display: none; }
   .entry-image .placeholder {
@@ -876,6 +888,47 @@
     margin-top: 12px;
     padding-top: 10px;
     border-top: 1px solid rgba(244, 234, 216, 0.06);
+  }
+
+  /* Lightbox: full-screen image viewer */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(13, 10, 20, 0.96);
+    backdrop-filter: blur(20px);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+    cursor: zoom-out;
+    padding: 40px;
+  }
+  .lightbox.show {
+    opacity: 1; pointer-events: auto;
+  }
+  .lightbox-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(244,234,216,0.08);
+    cursor: default;
+  }
+  .lightbox-close {
+    position: absolute;
+    top: 20px; right: 24px;
+    background: rgba(244, 234, 216, 0.08);
+    border: 1px solid rgba(244, 234, 216, 0.18);
+    color: var(--cream);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 22px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    z-index: 1;
+  }
+  .lightbox-close:hover {
+    background: rgba(232, 146, 68, 0.18);
+    border-color: var(--saffron);
   }
 
   /* prev/next passage navigation — sits below passage text, above meta bar */
@@ -1676,6 +1729,12 @@
   </div>
 </div>
 
+<!-- Lightbox: full-screen image viewer for ephemera/discography images -->
+<div class="lightbox" id="lightbox" role="dialog" aria-label="image viewer">
+  <button class="lightbox-close" id="lightboxClose" aria-label="close">×</button>
+  <img class="lightbox-img" id="lightboxImg" alt="">
+</div>
+
 <!-- Hidden YouTube IFrame (audio engine) -->
 <div id="youtubePlayer" style="position:fixed; left:-9999px; top:-9999px; width:1px; height:1px; opacity:0; pointer-events:none;"></div>
 
@@ -2426,6 +2485,40 @@ const ephemeraRotator = new Rotator(document.getElementById('ephemeraStage'), ep
 const discographyRotator = new Rotator(document.getElementById('discographyStage'), discography, 'discography');
 
 // ============================================================
+//   L I G H T B O X   ( click any rotator image to view full-screen )
+// ============================================================
+const lightboxEl = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+const lightboxClose = document.getElementById('lightboxClose');
+
+function openLightbox(src, alt) {
+  lightboxImg.src = src;
+  lightboxImg.alt = alt || '';
+  lightboxEl.classList.add('show');
+}
+function closeLightbox() {
+  lightboxEl.classList.remove('show');
+  // Clear the src after the close transition to free memory
+  setTimeout(() => { lightboxImg.src = ''; }, 300);
+}
+
+// Delegate clicks: any <img> inside .entry-image opens lightbox
+document.addEventListener('click', (e) => {
+  const img = e.target.closest('.entry-image img');
+  if (img && img.src) {
+    e.stopPropagation();
+    openLightbox(img.src, img.alt);
+  }
+});
+
+// Click on backdrop (anywhere except the image itself) closes
+lightboxEl.addEventListener('click', (e) => {
+  if (e.target === lightboxImg) return;
+  closeLightbox();
+});
+lightboxClose.addEventListener('click', closeLightbox);
+
+// ============================================================
 //   T O C  +  R E A D E R
 // ============================================================
 
@@ -2960,6 +3053,29 @@ window.onYouTubeIframeAPIReady = function() {
       onError: onYTError
     }
   });
+
+  // Fallback: if onReady doesn't fire within 4 seconds, try to force-cue the playlist
+  // (handles cases where YouTube's empty /embed/?listType=... URL fails silently)
+  setTimeout(() => {
+    if (!ytReady && ytPlayer) {
+      try {
+        if (typeof ytPlayer.cuePlaylist === 'function') {
+          ytPlayer.cuePlaylist({ list: PLAYLIST_ID, listType: 'playlist', index: 0 });
+          // Manually mark as ready since onReady didn't fire
+          setTimeout(() => {
+            if (!ytReady) {
+              ytReady = true;
+              if (typeof ytPlayer.setVolume === 'function') ytPlayer.setVolume(INITIAL_VOLUME);
+              playerPlayPause.innerHTML = '▶';
+              setTimeout(updateTrackInfo, 800);
+            }
+          }, 1500);
+        }
+      } catch (e) {
+        console.warn('Playlist fallback cue failed:', e);
+      }
+    }
+  }, 4000);
 };
 
 function onYTReady(event) {
@@ -2972,6 +3088,13 @@ function onYTReady(event) {
 
 function onYTStateChange(event) {
   const state = event.data;
+  // If onReady never fired but state changes are coming through, the player IS working
+  if (!ytReady) {
+    ytReady = true;
+    try { ytPlayer.setVolume(INITIAL_VOLUME); } catch (e) {}
+    playerPlayPause.innerHTML = '▶';
+    setTimeout(updateTrackInfo, 200);
+  }
   if (state === YT.PlayerState.PLAYING) {
     playerDisc.classList.add('spinning');
     playerMini.classList.add('spinning');
@@ -3680,6 +3803,11 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && figPopover.classList.contains('show')) {
     e.preventDefault();
     hideFigure();
+    return;
+  }
+  if (e.key === 'Escape' && lightboxEl.classList.contains('show')) {
+    e.preventDefault();
+    closeLightbox();
     return;
   }
   if (activeView === 'reading') {

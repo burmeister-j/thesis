@@ -259,55 +259,56 @@
   }
   #view-ephemera .entry-image::after { display: none; }
 
-  /* Multi-image layouts: ephemera entries with stacked or side-by-side images.
-     Heights respect main's vertical padding so images stay within visible area. */
-  .entry-image.stacked,
-  .entry-image.side-by-side {
-    aspect-ratio: auto !important;
-    height: auto;
-    max-height: calc(100vh - 280px);
+  /* Multi-image layouts: ephemera entries with multiple images.
+     Only one image shows at a time, navigated via the toggle overlay. */
+  .entry-image.multi {
+    position: relative;
+  }
+  .entry-image.multi img {
+    display: none;
+  }
+  .entry-image.multi img.active {
+    display: block;
+  }
+  .image-toggle {
+    position: absolute;
+    bottom: -32px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(24, 17, 34, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(244, 234, 216, 0.10);
+    border-radius: 100px;
+    padding: 4px 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--cream-faint);
+    z-index: 5;
+  }
+  .img-nav {
     background: transparent;
-    box-shadow: none;
-    overflow: auto;
-    display: flex;
-    gap: 14px;
-    align-self: center;
+    border: none;
+    color: var(--cream-dim);
+    cursor: pointer;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    transition: color 0.2s ease, background 0.2s ease;
+    font-family: inherit;
   }
-  .entry-image.stacked { flex-direction: column; align-items: flex-start; }
-  .entry-image.side-by-side { flex-direction: row; align-items: flex-start; justify-content: flex-start; }
-  .entry-image.stacked img,
-  .entry-image.side-by-side img {
-    width: auto; height: auto;
-    max-width: 100%;
-    max-height: calc((100vh - 320px) / 2);
-    object-fit: contain;
-    border-radius: 2px;
-    box-shadow:
-      0 0 50px 10px rgba(232, 146, 68, 0.16),
-      0 0 20px 3px rgba(232, 146, 68, 0.10),
-      0 20px 40px rgba(0,0,0,0.45);
-    -webkit-mask-image: radial-gradient(ellipse at center, #000 88%, transparent 100%);
-            mask-image: radial-gradient(ellipse at center, #000 88%, transparent 100%);
-    cursor: zoom-in;
-    transition: transform 0.3s ease, box-shadow 0.4s ease;
-    flex-shrink: 0;
+  .img-nav:hover {
+    color: var(--saffron);
+    background: rgba(232, 146, 68, 0.12);
   }
-  .entry-image.stacked img:hover,
-  .entry-image.side-by-side img:hover {
-    transform: scale(1.02);
-    box-shadow:
-      0 0 70px 16px rgba(232, 146, 68, 0.26),
-      0 0 26px 5px rgba(232, 146, 68, 0.16),
-      0 20px 40px rgba(0,0,0,0.45);
+  .img-counter {
+    font-variant-numeric: tabular-nums;
+    min-width: 28px; text-align: center;
   }
-  .entry-image.side-by-side img { max-width: 48%; max-height: calc(100vh - 280px); }
-  /* Subtle scrollbar styling for multi-image overflow */
-  .entry-image.stacked::-webkit-scrollbar,
-  .entry-image.side-by-side::-webkit-scrollbar { width: 4px; height: 4px; }
-  .entry-image.stacked::-webkit-scrollbar-thumb,
-  .entry-image.side-by-side::-webkit-scrollbar-thumb { background: rgba(232, 146, 68, 0.25); border-radius: 2px; }
-  .entry-image.stacked::after,
-  .entry-image.side-by-side::after { display: none; }
+  .img-counter .img-cur {
+    color: var(--saffron);
+  }
   .entry-image .placeholder {
     position: absolute; inset: 0;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -2461,7 +2462,7 @@ class Rotator {
           <div class="entry-body">${e.body}</div>
           <p class="entry-source">${e.src}</p>
         </div>
-        <div class="entry-image${layoutClass}">
+        <div class="entry-image${imageList.length > 1 ? ' multi' : ''}">
           <div class="placeholder">
             ${mandalaSVG}
             <span class="ph-id">${e.id}</span>
@@ -2470,13 +2471,16 @@ class Rotator {
         </div>`;
       const frame = article.querySelector('.entry-image');
 
-      // Load each image; insert in PDF order
-      let loadedCount = 0;
+      // Load each image; insert in PDF order. For multi-image entries,
+      // only one image shows at a time; navigation is via the toggle controls.
       imageList.forEach((basePath, idx) => {
         tryLoadImage(basePath, (url) => {
           const imgEl = document.createElement('img');
           imgEl.src = url; imgEl.alt = e.title;
           imgEl.dataset.imgIndex = idx;
+          if (imageList.length > 1) {
+            imgEl.classList.toggle('active', idx === 0);
+          }
           // remove placeholder on first successful load
           const ph = frame.querySelector('.placeholder');
           if (ph) ph.remove();
@@ -2485,7 +2489,40 @@ class Rotator {
           const next = existing.find(el => Number(el.dataset.imgIndex) > idx);
           if (next) frame.insertBefore(imgEl, next);
           else frame.appendChild(imgEl);
-          loadedCount++;
+
+          // After all images load on a multi-image entry, attach toggle controls
+          if (imageList.length > 1 &&
+              frame.querySelectorAll('img').length === imageList.length &&
+              !frame.querySelector('.image-toggle')) {
+            const toggle = document.createElement('div');
+            toggle.className = 'image-toggle';
+            toggle.innerHTML = `
+              <button class="img-nav img-prev" aria-label="previous image">‹</button>
+              <span class="img-counter"><span class="img-cur">1</span> / ${imageList.length}</span>
+              <button class="img-nav img-next" aria-label="next image">›</button>
+            `;
+            frame.appendChild(toggle);
+
+            const cur = toggle.querySelector('.img-cur');
+            const prevBtn = toggle.querySelector('.img-prev');
+            const nextBtn = toggle.querySelector('.img-next');
+            let active = 0;
+
+            function showAt(i) {
+              const imgs = frame.querySelectorAll('img');
+              imgs.forEach((im, ii) => im.classList.toggle('active', ii === i));
+              cur.textContent = i + 1;
+              active = i;
+            }
+            prevBtn.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              showAt((active - 1 + imageList.length) % imageList.length);
+            });
+            nextBtn.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              showAt((active + 1) % imageList.length);
+            });
+          }
         });
       });
 
@@ -4074,9 +4111,6 @@ function loop(ts) {
   if (lastTime === null) lastTime = ts;
   const delta = ts - lastTime;
   lastTime = ts;
-
-  // Always update the music player progress, regardless of view
-  updateYTProgress();
 
   // Step the archive reader if active
   if (activeView === 'archive' && archiveActiveIndex >= 0 && archiveReader) {

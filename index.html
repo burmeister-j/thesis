@@ -135,7 +135,12 @@
   .view.active { display: block; }
 
   /* ============ ROTATING CARDS ============ */
-  .stage { position: relative; min-height: 60vh; }
+  .stage {
+    position: relative;
+    min-height: 60vh;
+    max-height: calc(100vh - 240px);
+    overflow: hidden;
+  }
 
   .entry {
     position: absolute; inset: 0;
@@ -148,6 +153,7 @@
     display: grid;
     grid-template-columns: 1fr 0.85fr;
     gap: 72px; align-items: center;
+    overflow: hidden;
   }
   .entry.active {
     opacity: 1; transform: translateY(0); pointer-events: auto;
@@ -254,8 +260,7 @@
   #view-ephemera .entry-image::after { display: none; }
 
   /* Multi-image layouts: ephemera entries with stacked or side-by-side images.
-     Heights use calc() to respect main's 240px vertical padding so images
-     never push past the visible content area. */
+     Heights respect main's vertical padding so images stay within visible area. */
   .entry-image.stacked,
   .entry-image.side-by-side {
     aspect-ratio: auto !important;
@@ -266,6 +271,7 @@
     overflow: auto;
     display: flex;
     gap: 14px;
+    align-self: center;
   }
   .entry-image.stacked { flex-direction: column; align-items: flex-start; }
   .entry-image.side-by-side { flex-direction: row; align-items: flex-start; justify-content: flex-start; }

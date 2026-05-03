@@ -218,7 +218,7 @@
   #view-ephemera .entry-image {
     aspect-ratio: auto;
     height: auto;
-    max-height: 56vh;
+    max-height: calc(100vh - 280px);
     background: transparent;
     box-shadow: none;
     display: flex; align-items: center; justify-content: flex-start;
@@ -226,7 +226,7 @@
   }
   #view-ephemera .entry-image img {
     width: auto; height: auto;
-    max-width: 100%; max-height: 56vh;
+    max-width: 100%; max-height: calc(100vh - 280px);
     object-fit: contain;
     border-radius: 2px;
     box-shadow:
@@ -253,12 +253,14 @@
   }
   #view-ephemera .entry-image::after { display: none; }
 
-  /* Multi-image layouts: ephemera entries with stacked or side-by-side images */
+  /* Multi-image layouts: ephemera entries with stacked or side-by-side images.
+     Heights use calc() to respect main's 240px vertical padding so images
+     never push past the visible content area. */
   .entry-image.stacked,
   .entry-image.side-by-side {
     aspect-ratio: auto !important;
     height: auto;
-    max-height: 56vh;
+    max-height: calc(100vh - 280px);
     background: transparent;
     box-shadow: none;
     overflow: auto;
@@ -271,7 +273,7 @@
   .entry-image.side-by-side img {
     width: auto; height: auto;
     max-width: 100%;
-    max-height: 25vh;
+    max-height: calc((100vh - 320px) / 2);
     object-fit: contain;
     border-radius: 2px;
     box-shadow:
@@ -292,7 +294,7 @@
       0 0 26px 5px rgba(232, 146, 68, 0.16),
       0 20px 40px rgba(0,0,0,0.45);
   }
-  .entry-image.side-by-side img { max-width: 48%; max-height: 44vh; }
+  .entry-image.side-by-side img { max-width: 48%; max-height: calc(100vh - 280px); }
   /* Subtle scrollbar styling for multi-image overflow */
   .entry-image.stacked::-webkit-scrollbar,
   .entry-image.side-by-side::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -2094,7 +2096,7 @@ const passages = [
     title: "Chapter One, movement ii: Gaze Upon the Surface of Infinity",
     paragraphs: [
       `That the jazz reception apparatus was unable to hear this architecture is a matter of historical record. In 1972, five years after John's death, Alice Coltrane released <em>Infinity</em>—an album combining her own original compositions with sessions from her recently deceased husband, reworked and re-produced under her direction. Kodwo Eshun, describing the cover art, names the aperture her critics could not enter: "To look at the front sleeve is to fall through fractalized stained glass into nested formations of spirals within spirals, kaleidoscopic iterations as blue as mother sky" (Eshun, 1998, p. 165). The spirals within spirals disclose the fractal recursion of Coltrane's atomic ontology, where the Absolute inhabits every particle of experiential reality. But the reception apparatus could not receive the cover as her cosmological proposition. Her decision to release <em>Infinity</em> was read by critics as disrespectful and demeaning to John's memory, rather than as the shared boundary-dissolving practice that John himself had deployed throughout his career. What the jazz press could hear was a widow handling property; what it could not hear was a Black woman as co-author of a shared cosmic project, operating the compositional practice <em>Monument Eternal</em> had just finished articulating as ontology.`,
-      `Moten's (2003) critical remixing of nonconvergent tracks names the operation with precision. Alice's work on <em>Infinity</em>[d5] was not a departure from John's recordings; it was the Black radical compositional procedure by which two nonconvergent tracks—John's saxophone sessions, Alice's orchestral and compositional additions—are remixed such that each is transformed by the other without being absorbed. This is the break operating at the register of musicological compositional practice, authorized by the cosmological framework <em>Monument Eternal</em> had just articulated. That Eshun, writing in 1998, was among the first to receive the cover on its own terms is a measure of how long the reception apparatus took to catch up to what Coltrane had done. What the thesis now receives through the lit review's theoretical apparatus—Moten's remix, Khan's <em>Nada Brahma</em>, Stiegler's <em>tertiary retention</em>, Glissant's <em>creolization</em>, brown's diffusion—is the vocabulary that was not yet available to the 1972 jazz press, through which Infinity can now be heard as what it always-already was.`,
+      `Moten's (2003) critical remixing of nonconvergent tracks names the operation with precision. Alice's work on <em>Infinity</em>[F.3] was not a departure from John's recordings; it was the Black radical compositional procedure by which two nonconvergent tracks—John's saxophone sessions, Alice's orchestral and compositional additions—are remixed such that each is transformed by the other without being absorbed. This is the break operating at the register of musicological compositional practice, authorized by the cosmological framework <em>Monument Eternal</em> had just articulated. That Eshun, writing in 1998, was among the first to receive the cover on its own terms is a measure of how long the reception apparatus took to catch up to what Coltrane had done. What the thesis now receives through the lit review's theoretical apparatus—Moten's remix, Khan's <em>Nada Brahma</em>, Stiegler's <em>tertiary retention</em>, Glissant's <em>creolization</em>, brown's diffusion—is the vocabulary that was not yet available to the 1972 jazz press, through which Infinity can now be heard as what it always-already was.`,
     ]
   },
   {
@@ -2980,16 +2982,28 @@ const figBody = document.getElementById('figBody');
 const figSrc = document.getElementById('figSrc');
 
 function findFigureSource(figId) {
-  // Try ephemera first, then discography
-  // Ephemera entries are in `archive` array; discography in `discography` array
-  // Both use { id, img, title, meta, body, src }
-  if (typeof archive !== 'undefined') {
-    const e = archive.find(a => a.id === figId);
+  // Special mapping: F.3 reuses the Infinity (1972) discography image
+  // for in-text continuity with F.1, F.2, F.4, F.5, F.6, F.7, F.8
+  if (figId === 'F.3' && typeof discography !== 'undefined') {
+    const inf = discography.find(a => a.id.startsWith('05 '));
+    if (inf) return inf;
+  }
+  // Try ephemera first (F.1, F.2, etc.)
+  if (typeof ephemera !== 'undefined') {
+    const e = ephemera.find(a => a.id === figId);
     if (e) return e;
   }
+  // Then discography by exact id (e.g., "05 · 1972")
   if (typeof discography !== 'undefined') {
     const d = discography.find(a => a.id === figId);
     if (d) return d;
+    // Also accept "d5", "d10" etc. → match by track number prefix
+    const m = figId.match(/^d(\d+)$/i);
+    if (m) {
+      const num = m[1].padStart(2, '0');
+      const byNum = discography.find(a => a.id.startsWith(num + ' '));
+      if (byNum) return byNum;
+    }
   }
   return null;
 }

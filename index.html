@@ -220,8 +220,9 @@
   }
   .entry-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  /* Ephemera images preserve their actual proportions */
-  #view-ephemera .entry-image {
+  /* Ephemera + Discography images: preserve actual proportions, feathered glow */
+  #view-ephemera .entry-image,
+  #view-discography .entry-image {
     aspect-ratio: auto;
     height: auto;
     max-height: calc(100vh - 280px);
@@ -230,7 +231,8 @@
     display: flex; align-items: center; justify-content: flex-start;
     overflow: hidden;
   }
-  #view-ephemera .entry-image img {
+  #view-ephemera .entry-image img,
+  #view-discography .entry-image img {
     width: auto; height: auto;
     max-width: 100%; max-height: calc(100vh - 280px);
     object-fit: contain;
@@ -239,25 +241,26 @@
       0 0 60px 12px rgba(232, 146, 68, 0.18),
       0 0 24px 4px rgba(232, 146, 68, 0.12),
       0 30px 60px rgba(0,0,0,0.5);
-    -webkit-mask-image: radial-gradient(ellipse at center, #000 88%, transparent 100%);
-            mask-image: radial-gradient(ellipse at center, #000 88%, transparent 100%);
     cursor: zoom-in;
     transition: transform 0.3s ease, box-shadow 0.4s ease;
   }
-  #view-ephemera .entry-image img:hover {
+  #view-ephemera .entry-image img:hover,
+  #view-discography .entry-image img:hover {
     transform: scale(1.02);
     box-shadow:
       0 0 80px 18px rgba(232, 146, 68, 0.28),
       0 0 30px 6px rgba(232, 146, 68, 0.18),
       0 30px 60px rgba(0,0,0,0.5);
   }
-  #view-ephemera .entry-image .placeholder {
+  #view-ephemera .entry-image .placeholder,
+  #view-discography .entry-image .placeholder {
     position: relative; width: 100%; aspect-ratio: 4 / 5;
     background: linear-gradient(135deg, rgba(232,146,68,0.08) 0%, rgba(122,91,142,0.12) 50%, rgba(192,131,137,0.06) 100%);
     border-radius: 2px;
     box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(244,234,216,0.06);
   }
-  #view-ephemera .entry-image::after { display: none; }
+  #view-ephemera .entry-image::after,
+  #view-discography .entry-image::after { display: none; }
 
   /* Multi-image layouts: ephemera entries with multiple images.
      Only one image shows at a time, navigated via the toggle overlay. */
@@ -2473,57 +2476,73 @@ class Rotator {
 
       // Load each image; insert in PDF order. For multi-image entries,
       // only one image shows at a time; navigation is via the toggle controls.
-      imageList.forEach((basePath, idx) => {
-        tryLoadImage(basePath, (url) => {
-          const imgEl = document.createElement('img');
-          imgEl.src = url; imgEl.alt = e.title;
-          imgEl.dataset.imgIndex = idx;
-          if (imageList.length > 1) {
-            imgEl.classList.toggle('active', idx === 0);
-          }
-          // remove placeholder on first successful load
-          const ph = frame.querySelector('.placeholder');
-          if (ph) ph.remove();
-          // insert in correct order based on idx
-          const existing = Array.from(frame.querySelectorAll('img'));
-          const next = existing.find(el => Number(el.dataset.imgIndex) > idx);
-          if (next) frame.insertBefore(imgEl, next);
-          else frame.appendChild(imgEl);
+      let attemptsFinished = 0;
+      const totalAttempts = imageList.length;
 
-          // After all images load on a multi-image entry, attach toggle controls
-          if (imageList.length > 1 &&
-              frame.querySelectorAll('img').length === imageList.length &&
-              !frame.querySelector('.image-toggle')) {
-            const toggle = document.createElement('div');
-            toggle.className = 'image-toggle';
-            toggle.innerHTML = `
-              <button class="img-nav img-prev" aria-label="previous image">‹</button>
-              <span class="img-counter"><span class="img-cur">1</span> / ${imageList.length}</span>
-              <button class="img-nav img-next" aria-label="next image">›</button>
-            `;
-            frame.appendChild(toggle);
+      function attachToggleIfReady() {
+        if (imageList.length <= 1) return;
+        if (attemptsFinished < totalAttempts) return;
+        if (frame.querySelector('.image-toggle')) return;
+        const loadedImgs = frame.querySelectorAll('img');
+        if (loadedImgs.length < 2) return; // no point in a toggle if only one loaded
 
-            const cur = toggle.querySelector('.img-cur');
-            const prevBtn = toggle.querySelector('.img-prev');
-            const nextBtn = toggle.querySelector('.img-next');
-            let active = 0;
+        const toggle = document.createElement('div');
+        toggle.className = 'image-toggle';
+        toggle.innerHTML = `
+          <button class="img-nav img-prev" aria-label="previous image">‹</button>
+          <span class="img-counter"><span class="img-cur">1</span> / ${loadedImgs.length}</span>
+          <button class="img-nav img-next" aria-label="next image">›</button>
+        `;
+        frame.appendChild(toggle);
 
-            function showAt(i) {
-              const imgs = frame.querySelectorAll('img');
-              imgs.forEach((im, ii) => im.classList.toggle('active', ii === i));
-              cur.textContent = i + 1;
-              active = i;
-            }
-            prevBtn.addEventListener('click', (ev) => {
-              ev.stopPropagation();
-              showAt((active - 1 + imageList.length) % imageList.length);
-            });
-            nextBtn.addEventListener('click', (ev) => {
-              ev.stopPropagation();
-              showAt((active + 1) % imageList.length);
-            });
-          }
+        const cur = toggle.querySelector('.img-cur');
+        const prevBtn = toggle.querySelector('.img-prev');
+        const nextBtn = toggle.querySelector('.img-next');
+        let active = 0;
+
+        function showAt(i) {
+          const imgs = frame.querySelectorAll('img');
+          imgs.forEach((im, ii) => im.classList.toggle('active', ii === i));
+          cur.textContent = i + 1;
+          active = i;
+        }
+        prevBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          showAt((active - 1 + loadedImgs.length) % loadedImgs.length);
         });
+        nextBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          showAt((active + 1) % loadedImgs.length);
+        });
+      }
+
+      imageList.forEach((basePath, idx) => {
+        tryLoadImage(basePath,
+          (url) => {
+            const imgEl = document.createElement('img');
+            imgEl.src = url; imgEl.alt = e.title;
+            imgEl.dataset.imgIndex = idx;
+            if (imageList.length > 1) {
+              imgEl.classList.toggle('active', idx === 0);
+            }
+            // remove placeholder on first successful load
+            const ph = frame.querySelector('.placeholder');
+            if (ph) ph.remove();
+            // insert in correct order based on idx
+            const existing = Array.from(frame.querySelectorAll('img'));
+            const next = existing.find(el => Number(el.dataset.imgIndex) > idx);
+            if (next) frame.insertBefore(imgEl, next);
+            else frame.appendChild(imgEl);
+            attemptsFinished++;
+            attachToggleIfReady();
+          },
+          () => {
+            // Failed to load — log so we can debug missing files
+            console.warn(`Image not found: ${basePath} (entry ${e.id})`);
+            attemptsFinished++;
+            attachToggleIfReady();
+          }
+        );
       });
 
       this.stage.appendChild(article);

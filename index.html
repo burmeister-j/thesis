@@ -95,6 +95,32 @@
     color: var(--cream-faint);
   }
   .mark .accent { color: var(--saffron); }
+  .mark-stack {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .pdf-download {
+    pointer-events: auto;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 0.2em;
+    color: var(--cream-faint);
+    text-decoration: none; text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid rgba(244, 234, 216, 0.10);
+    border-radius: 100px;
+    background: rgba(13, 10, 20, 0.4);
+    backdrop-filter: blur(8px);
+    transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+  }
+  .pdf-download:hover {
+    color: var(--saffron);
+    border-color: rgba(232, 146, 68, 0.45);
+    background: rgba(232, 146, 68, 0.08);
+  }
+  .pdf-download svg { display: block; flex-shrink: 0; }
   nav {
     display: flex; gap: 4px; align-self: flex-start;
     pointer-events: auto;
@@ -1624,7 +1650,18 @@
 
 <header>
   <div class="header-row">
-    <div class="mark"><span class="accent">◉</span> a [re]Sounding Message</div>
+    <div class="mark-stack">
+      <div class="mark"><span class="accent">◉</span> a [re]Sounding Message</div>
+      <a href="burmeister-j_MA-thesis_2026.pdf" download class="pdf-download" title="download the full thesis (PDF)" aria-label="download the full thesis as PDF">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="12" x2="12" y2="18"/>
+          <polyline points="9 15 12 18 15 15"/>
+        </svg>
+        <span>thesis · pdf</span>
+      </a>
+    </div>
   </div>
   <nav>
     <button data-view="ephemera" class="active">ephemera</button>

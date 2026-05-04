@@ -288,10 +288,10 @@
   #view-discography .entry-image::after { display: none; }
 
   /* Multi-image layouts: ephemera entries with multiple images.
-     Only one image shows at a time, navigated via the toggle overlay. */
+     Only one image shows at a time, navigated via the toggle overlay above. */
   .entry-image.multi {
     position: relative;
-    margin-bottom: 50px; /* room for toggle pill below */
+    margin-top: 40px; /* room for toggle pill above */
   }
   .entry-image.multi img {
     display: none;
@@ -302,19 +302,21 @@
   }
   .image-toggle {
     position: absolute;
-    bottom: -42px; left: 50%;
+    top: -38px; left: 50%;
     transform: translateX(-50%);
     display: flex; align-items: center; gap: 14px;
-    background: rgba(24, 17, 34, 0.85);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(244, 234, 216, 0.10);
+    background: rgba(40, 28, 56, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(232, 146, 68, 0.25);
     border-radius: 100px;
-    padding: 4px 6px;
+    padding: 5px 8px;
     font-family: 'DM Mono', monospace;
     font-size: 10px;
     letter-spacing: 0.15em;
-    color: var(--cream-faint);
-    z-index: 5;
+    color: var(--cream);
+    z-index: 10;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5),
+                0 0 24px rgba(232, 146, 68, 0.12);
   }
   .img-nav {
     background: transparent;

@@ -291,19 +291,21 @@
      Only one image shows at a time, navigated via the toggle overlay. */
   .entry-image.multi {
     position: relative;
+    margin-bottom: 50px; /* room for toggle pill below */
   }
   .entry-image.multi img {
     display: none;
+    max-height: calc(100vh - 380px) !important; /* tighter cap so toggle has room */
   }
   .entry-image.multi img.active {
     display: block;
   }
   .image-toggle {
     position: absolute;
-    bottom: 12px; left: 50%;
+    bottom: -42px; left: 50%;
     transform: translateX(-50%);
     display: flex; align-items: center; gap: 14px;
-    background: rgba(24, 17, 34, 0.92);
+    background: rgba(24, 17, 34, 0.85);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(244, 234, 216, 0.10);
     border-radius: 100px;
@@ -313,7 +315,6 @@
     letter-spacing: 0.15em;
     color: var(--cream-faint);
     z-index: 5;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   }
   .img-nav {
     background: transparent;

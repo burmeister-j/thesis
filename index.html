@@ -3112,10 +3112,19 @@ function showFigure(figId) {
   if (!data) return;
   reader.setPaused(true);
   figNum.textContent = figId;
-  // Image: use .jpg fallback, with srcset for retina
+  // Image: try all supported extensions (jpg, jpeg, png, webp, gif, avif, JPG, PNG)
   if (data.img) {
-    figImageWrap.innerHTML =
-      `<img src="${data.img}.jpg" alt="${(data.title||'figure').replace(/"/g,'&quot;')}" onerror="this.onerror=null;this.src='${data.img}.png'">`;
+    figImageWrap.innerHTML = '<div class="fig-loading">…</div>';
+    tryLoadImage(data.img,
+      (url) => {
+        figImageWrap.innerHTML =
+          `<img src="${url}" alt="${(data.title||'figure').replace(/"/g,'&quot;')}">`;
+      },
+      () => {
+        figImageWrap.innerHTML = '<div class="fig-loading">image not available</div>';
+        console.warn(`Figure popover image not found: ${data.img} (figId ${figId})`);
+      }
+    );
   } else {
     figImageWrap.innerHTML = '';
   }
